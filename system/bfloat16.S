@@ -763,9 +763,8 @@ binary_search_loop:
     add    a0, x0, x31
     add    a1, x0, x31
     jal    ra, my_mul
-    add    x20, x0, a0
+    srai   x20, a0, 7
 # mul x20, x29, x29
-    srai   x20, x20, 7
     blt    x24, x20, sqrt_lower         # m < sq
 # add    x31, x0, x29                 # result=mid
     addi   x25, x31, 1
