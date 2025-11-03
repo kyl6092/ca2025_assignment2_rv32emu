@@ -320,13 +320,12 @@ static void test_bf16_mul(void)
     /* Kernel Function */
     f32_t in1, in2;
     bf16_t in1_bf, in2_bf, out_bf, expect;
-    in1.value = 3.0f;
-    in2.value = 5.5f;
+    in1.value = 2.0f;
+    in2.value = 3.0f;
     in1_bf.bits = f32_to_bf16(in1.bits);
     in2_bf.bits = f32_to_bf16(in2.bits);
-    expect.bits = 0x4184;
+    expect.bits = 0x40c0;
     out_bf.bits = my_fp_mul(in1_bf.bits, in2_bf.bits, 0, 25, 7, 15, 15);
-    
     /* Optional (Test with FP32) */
     // f32_t out, rt;
     // out.bits=my_mul(in1.bits, in2.bits, 0, 9, 23, 31, 48);

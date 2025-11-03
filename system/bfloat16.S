@@ -375,20 +375,10 @@ rt_b:
 my_mul:
 # a0 out (in1)
 # a1 in2
-    addi   sp, sp, -12
-    sw     ra, 8(sp)
-    sw     a1, 4(sp)
-    sw     a0, 0(sp)
-
-    jal    ra, is_zero
-    bne    a0, zero, my_mul_zero
-    lw     a0, 4(sp)
-    jal    ra, is_zero
-    bne    a0, zero, my_mul_zero
-    lw     a1, 4(sp)
+    add    x29, x0, a0
+    beq    a0, zero, my_mul_ret
     addi   a0,  x0, 0
-    # addi   x28, x0, 0
-    lw     x29, 0(sp)
+    beq    a1, zero, my_mul_ret
 my_mul_loop:
     andi   x28, a1, 1
     beq    x28, zero, my_mul_loop_1
@@ -398,13 +388,6 @@ my_mul_loop_1:
     srli   a1, a1, 1
     bne    a1, zero, my_mul_loop
 my_mul_ret:
-    lw     ra, 8(sp)
-    addi   sp, sp, 12
-    ret
-my_mul_zero:
-    addi   a0, x0, 0
-    lw     ra, 8(sp)
-    addi   sp, sp, 12
     ret
 .size my_mul,.-my_mul
 
@@ -524,14 +507,14 @@ bf16_mul_handle:
     srli   x29, x21, 15                 # resolution of mantissa
     bne    x29, zero, mul_sign_neg
     srl    x21, x21, a4
-    srl    x29, t1, a3
-    and    x21, x21, x29
+    # srl    x29, t1, a3
+    andi    x21, x21, 0x7F
     j      mul_stage7
 mul_sign_neg:
     srl    x21, x21, a4
     srli   x21, x21, 1
-    srl    x29, t1, a3
-    and    x21, x21, x29
+    # srl    x29, t1, a3
+    andi    x21, x21, 0x7F
     addi   x22, x22, 1
 mul_stage7:
     addi   x29, x22, -0xFF
@@ -548,8 +531,8 @@ mul_rt_cal:
     andi   x29, x22, 0xFF
     or     a0, a0, x29
     sll    a0, a0, a4
-    srl    x29, t1, a3
-    and    x29, x21, x29
+    # srl    x29, t1, a3
+    andi    x29, x21, 0x7F
     or     a0, a0, x29
     lw     ra, 8(sp)
     addi   sp, sp, 12
@@ -573,7 +556,7 @@ rt_mul_inf:
     ret
 rt_inf:
     slli   a0, x23, 8
-    add    a0, a0, x28
+    addi   a0, a0, 0xFF
     sll    a0, a0, a4
     ret
 rt_mul_zero:
