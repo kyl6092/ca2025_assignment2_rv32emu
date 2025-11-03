@@ -16,7 +16,7 @@ AS = $(CROSS_COMPILE)as
 LD = $(CROSS_COMPILE)ld
 OBJDUMP = $(CROSS_COMPILE)objdump
 
-OBJS = start.o main.o perfcounter.o bfloat16.o chacha20_asm.o
+OBJS = start.o main.o perfcounter.o bfloat16.o
 
 .PHONY: all run dump clean
 

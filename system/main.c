@@ -259,122 +259,426 @@ extern uint32_t my_sqrt(
 );
 
 /* ============= Test Suite ============= */
-static void test_my_bfloat16(void)
-{
+#define BF16_NAN() ((bf16_t) {.bits = 0x7FC0})
+#define BF16_ZERO() ((bf16_t) {.bits = 0x0000})
+#define BF16_INF() ((bf16_t) {.bits = 0x7f80})
 
-    TEST_LOGGER("Test: My bfloat16\n");
-    
-    f32_t in1, in2, out,rt;
+static void test_bf16_add(void)
+{
+    /* Kernel Function */
+    f32_t in1, in2;
+    bf16_t in1_bf, in2_bf, out_bf, expect;
     in1.value = 0.3f;
     in2.value = 0.5f;
-    bf16_t in1_bf, in2_bf, out_bf;
     in1_bf.bits = f32_to_bf16(in1.bits);
     in2_bf.bits = f32_to_bf16(in2.bits);
-
-    /* Addition */
+    expect.bits = 0x3f4d;
     out_bf.bits=my_add(in1_bf.bits, in2_bf.bits, 0, 25, 7, 15);
-    out.bits=my_add(in1.bits, in2.bits, 0, 9, 23, 31);
-    rt.bits = bf16_to_f32(out_bf.bits);
-    print_hex(out_bf.bits);
-    print_hex(out.bits);
-    print_hex(rt.bits);
 
-    /* subtraction */
+    /* Optional (Test with FP32) */
+    // f32_t out, rt;
+    // out.bits=my_add(in1.bits, in2.bits, 0, 9, 23, 31);
+    // rt.bits = bf16_to_f32(out_bf.bits);
+
+    /* Check Correctness */
+    if (out_bf.bits == expect.bits) {
+        TEST_LOGGER("bf16 FP Addition \t\tPASSED\n");
+    }
+    else {
+        TEST_LOGGER("bf16 FP Addition \t\tFAILED (expected 0x3f4d)\n");
+    }
+}
+
+static void test_bf16_sub(void)
+{
+    /* Kernel Function */
+    f32_t in1, in2;
+    bf16_t in1_bf, in2_bf, out_bf, expect;
+    in1.value = 0.3f;
+    in2.value = 0.5f;
+    in1_bf.bits = f32_to_bf16(in1.bits);
+    in2_bf.bits = f32_to_bf16(in2.bits);
+    expect.bits = 0xbe4c;
     out_bf.bits=my_sub(in1_bf.bits, in2_bf.bits, 0, 25, 7, 15);
-    out.bits=my_sub(in1.bits, in2.bits, 0, 9, 23, 31);
-    rt.bits = bf16_to_f32(out_bf.bits);
-    print_hex(out_bf.bits);
-    print_hex(out.bits);
-    print_hex(rt.bits);
-    
-    /* Inf checks */
-    in1.bits = 0x7f800000;
-    in1_bf.bits = f32_to_bf16(in1.bits);
-    print_dec(is_inf(in1_bf.bits, 0, 0, 25, 7));
-    in1.bits = 0x7fc00000;
-    in1_bf.bits = f32_to_bf16(in1.bits);
-    print_dec(is_inf(in1_bf.bits, 0, 0, 25, 7));
 
-    /* NaN checks */
-    in1.bits = 0x7fc00000;
-    in1_bf.bits = f32_to_bf16(in1.bits);
-    print_dec(is_nan(in1_bf.bits, 0, 0, 25, 7));
-    in1.bits = 0x7f800000;
-    in1_bf.bits = f32_to_bf16(in1.bits);
-    print_dec(is_nan(in1_bf.bits, 0, 0, 25, 7));
+    /* Optional (Test with FP32) */
+    // f32_t out, rt;
+    // out.bits=my_sub(in1.bits, in2.bits, 0, 9, 23, 31);
+    // rt.bits = bf16_to_f32(out_bf.bits);
 
-    /* Zero checks */
-    in1.bits = 0x00000000;
-    in1_bf.bits = f32_to_bf16(in1.bits);
-    print_dec(is_zero(in1_bf.bits, 0, 0, 17));
-    in1.bits = 0x80000000;
-    in1_bf.bits = f32_to_bf16(in1.bits);
-    print_dec(is_zero(in1_bf.bits, 0, 0, 17));
+    /* Check Correctness */
+    if (out_bf.bits == expect.bits) {
+        TEST_LOGGER("bf16 FP Subtraction \t\tPASSED\n");
+    }
+    else {
+        TEST_LOGGER("bf16 FP Subtraction \t\tFAILED (expected 0xbe4c)\n");
+    }
+}
 
-    /* Equality checks */
+static void test_bf16_mul(void)
+{
+    /* Kernel Function */
+    f32_t in1, in2;
+    bf16_t in1_bf, in2_bf, out_bf, expect;
+    in1.value = 3.0f;
+    in2.value = 5.5f;
+    in1_bf.bits = f32_to_bf16(in1.bits);
+    in2_bf.bits = f32_to_bf16(in2.bits);
+    expect.bits = 0x4184;
+    out_bf.bits = my_fp_mul(in1_bf.bits, in2_bf.bits, 0, 25, 7, 15, 15);
+
+    /* Optional (Test with FP32) */
+    // f32_t out, rt;
+    // out.bits=my_mul(in1.bits, in2.bits, 0, 9, 23, 31, 48);
+    // rt.bits = bf16_to_f32(out_bf.bits);
+
+    /* Check Correctness */
+    if (out_bf.bits == expect.bits) {
+        TEST_LOGGER("bf16 FP Multiplication \t\tPASSED\n");
+    }
+    else {
+        TEST_LOGGER("bf16 FP Multiplication \t\tFAILED (expected 0x4184)\n");
+    }
+}
+
+static void test_bf16_div(void) {
+    /* Kernel Function */
+    f32_t in1, in2;
+    bf16_t in1_bf, in2_bf, out_bf, expect;
+    in1.value = 3.0f;
+    in2.value = 5.5f;
+    in1_bf.bits = f32_to_bf16(in1.bits);
+    in2_bf.bits = f32_to_bf16(in2.bits);
+    expect.bits = 0x3f0b;
+    out_bf.bits = my_div(in1_bf.bits, in2_bf.bits, 0, 25, 7, 15, 15);
+
+    /* Optional (Test with FP32) */
+    // f32_t out, rt;
+    // out.bits=my_div(in1.bits, in2.bits, 0, 9, 23, 31, 48);
+    // rt.bits = bf16_to_f32(out_bf.bits);
+
+    /* Check Correctness */
+    if (out_bf.bits == expect.bits) {
+        TEST_LOGGER("bf16 FP Division \t\tPASSED\n");
+    }
+    else {
+        TEST_LOGGER("bf16 FP Division \t\tFAILED (expected 0x3f0b)\n");
+    }
+}
+
+static void test_bf16_sqrt(void) {
+    /* Kernel Function */
+    f32_t in1;
+    bf16_t in1_bf, out_bf, expect;
+    in1.value = 1.44f;
+    in1_bf.bits = f32_to_bf16(in1.bits);
+    expect.bits = 0x3f99;
+    out_bf.bits = my_sqrt(in1_bf.bits);
+
+    /* Check Correctness */
+    if (out_bf.bits == expect.bits) {
+        TEST_LOGGER("bf16 FP Square Root \t\tPASSED\n");
+    }
+    else {
+        TEST_LOGGER("bf16 FP Square Root \t\tFAILED (expected 0x3f0b)\n");
+    }
+}
+
+static void test_bf16_NaN(void) {
+
+    bf16_t in_bf = BF16_NAN();
+    if (is_nan(in_bf.bits, 0, 0, 25, 7)) {
+        TEST_LOGGER("bf16 FP NaN Checks \t\tPASSED\n");
+    }
+    else {
+        TEST_LOGGER("bf16 FP NaN Checks \t\tFAILED\n");
+    }
+}
+
+static void test_bf16_INF(void) {
+    bf16_t in_bf = BF16_INF();
+    if (is_inf(in_bf.bits, 0, 0, 25, 7)) {
+        TEST_LOGGER("bf16 FP +INF Checks \t\tPASSED\n");
+    }
+    else {
+        TEST_LOGGER("bf16 FP +INF Checks \t\tFAILED\n");
+    }
+}
+
+static void test_bf16_ZERO(void) {
+    bf16_t in_bf = BF16_ZERO();
+    if (is_zero(in_bf.bits, 0, 0, 17)) {
+        TEST_LOGGER("bf16 FP +0 Checks \t\tPASSED\n");
+    }
+    else {
+        TEST_LOGGER("bf16 FP +0 Checks \t\tFAILED\n");
+    }
+}
+
+static void test_bf16_EQUAL(void) {
+    /* Kernel Function */
+    f32_t in1, in2;
+    bf16_t in1_bf, in2_bf;
     in1.value = 3.14159f;
     in2.value = 3.14159f;
     in1_bf.bits = f32_to_bf16(in1.bits);
     in2_bf.bits = f32_to_bf16(in2.bits);
-    print_dec(is_eq(in1_bf.bits, in2_bf.bits, 0, 25, 7, 15));
-    in2.value = 3.0f;
-    in2_bf.bits = f32_to_bf16(in2.bits);
-    print_dec(is_eq(in1_bf.bits, in2_bf.bits, 0, 25, 7, 15));
 
-    /* less than */
+    /* Check Correctness */
+    if (is_eq(in1_bf.bits, in2_bf.bits, 0, 25, 7, 15)) {
+        in2.value = 3.0f;
+        in2_bf.bits = f32_to_bf16(in2.bits);
+        if (!is_eq(in1_bf.bits, in2_bf.bits, 0, 25, 7, 15)) {
+            TEST_LOGGER("bf16 FP Equality \t\tPASSED\n");
+        }
+        else {
+            TEST_LOGGER("bf16 FP Equality \t\tFAILED\n");
+        }
+    }
+    else {
+        TEST_LOGGER("bf16 FP Equality \t\tFAILED\n");
+    }
+}
+
+static void test_bf16_LT(void) {
+    /* Kernel Function */
+    f32_t in1, in2;
+    bf16_t in1_bf, in2_bf;
     in1.value = 3.0f;
     in2.value = 3.14159f;
     in1_bf.bits = f32_to_bf16(in1.bits);
     in2_bf.bits = f32_to_bf16(in2.bits);
-    print_dec(is_lt(in1_bf.bits, in2_bf.bits, 0, 25, 7, 15));
-    in1.value = 0.14159f;
-    in2.value = -1.14159f;
-    in1_bf.bits = f32_to_bf16(in1.bits);
-    in2_bf.bits = f32_to_bf16(in2.bits);
-    print_dec(is_lt(in1_bf.bits, in2_bf.bits, 0, 25, 7, 15));
 
-    /* Greater than */
+    /* Check Correctness */
+    if (is_lt(in1_bf.bits, in2_bf.bits, 0, 25, 7, 15)) {
+        TEST_LOGGER("bf16 FP LT \t\t\tPASSED\n");
+    }
+    else {
+        TEST_LOGGER("bf16 FP LT \t\t\tFAILED\n");
+    }
+}
+
+static void test_bf16_GT(void) {
+    /* Kernel Function */
+    f32_t in1, in2;
+    bf16_t in1_bf, in2_bf;
     in1.value = 0.0f;
     in2.value = -3.14159f;
     in1_bf.bits = f32_to_bf16(in1.bits);
     in2_bf.bits = f32_to_bf16(in2.bits);
-    print_dec(is_gt(in1_bf.bits, in2_bf.bits, 0, 25, 7, 15));
-    in1.value = 0.14159f;
-    in2.value = 1.14159f;
-    in1_bf.bits = f32_to_bf16(in1.bits);
-    in2_bf.bits = f32_to_bf16(in2.bits);
-    print_dec(is_gt(in1_bf.bits, in2_bf.bits, 0, 25, 7, 15));
 
-    /* Multiplication */
-    in1.bits = 62;
-    in2.bits = 107;
-    out.bits = my_mul(in1.bits, in2.bits, 0, 25, 7, 15, 15);
-    print_dec(out.bits);
+    /* Check Correctness */
+    if (is_gt(in1_bf.bits, in2_bf.bits, 0, 25, 7, 15)) {
+        TEST_LOGGER("bf16 FP GT \t\t\tPASSED\n");
+    }
+    else {
+        TEST_LOGGER("bf16 FP GT \t\t\tFAILED\n");
+    }
+}
 
+static void test_my_bfloat16(void)
+{
+    uint64_t start_cycles, end_cycles, cycles_elapsed;
+    uint64_t start_instret, end_instret, instret_elapsed;
+
+    TEST_LOGGER("--------------------\n");
+    TEST_LOGGER("Test: My bfloat16\n");
+    
+    f32_t in1, in2, out, rt;
+    bf16_t in1_bf, in2_bf, out_bf, expect;
+
+    
+
+    /* Addition */
+    start_cycles = get_cycles();
+    start_instret = get_instret();
+    
+    test_bf16_add();
+          
+    end_cycles = get_cycles();
+    end_instret = get_instret();
+    cycles_elapsed = end_cycles - start_cycles;
+    instret_elapsed = end_instret - start_instret;
+
+    TEST_LOGGER("  Cycles: ");
+    print_dec((unsigned long) cycles_elapsed);
+    TEST_LOGGER("  Instructions: ");
+    print_dec((unsigned long) instret_elapsed);
+    TEST_LOGGER("\n");
+    
+    /* Subtraction */
+    start_cycles = get_cycles();
+    start_instret = get_instret();
+    
+    test_bf16_sub();
+          
+    end_cycles = get_cycles();
+    end_instret = get_instret();
+    cycles_elapsed = end_cycles - start_cycles;
+    instret_elapsed = end_instret - start_instret;
+
+    TEST_LOGGER("  Cycles: ");
+    print_dec((unsigned long) cycles_elapsed);
+    TEST_LOGGER("  Instructions: ");
+    print_dec((unsigned long) instret_elapsed);
+    TEST_LOGGER("\n");
+    
     /* Floating point Multiplication */
-    in1.value = 3.0f;
-    in2.value = 5.5f;
-    in1_bf.bits = f32_to_bf16(in1.bits);
-    in2_bf.bits = f32_to_bf16(in2.bits);
-    out_bf.bits = my_fp_mul(in1_bf.bits, in2_bf.bits, 0, 25, 7, 15, 15);
-    out.bits = bf16_to_f32(out_bf.bits);
-    print_hex(out.bits);
+    start_cycles = get_cycles();
+    start_instret = get_instret();
+    
+    test_bf16_mul();
+          
+    end_cycles = get_cycles();
+    end_instret = get_instret();
+    cycles_elapsed = end_cycles - start_cycles;
+    instret_elapsed = end_instret - start_instret;
+
+    TEST_LOGGER("  Cycles: ");
+    print_dec((unsigned long) cycles_elapsed);
+    TEST_LOGGER("  Instructions: ");
+    print_dec((unsigned long) instret_elapsed);
+    TEST_LOGGER("\n");
 
     /* Floating point Division */
-    in1.value = 3.0f;
-    in2.value = 5.5f;
-    in1_bf.bits = f32_to_bf16(in1.bits);
-    in2_bf.bits = f32_to_bf16(in2.bits);
-    out_bf.bits = my_div(in1_bf.bits, in2_bf.bits, 0, 25, 7, 15, 15);
-    out.bits = bf16_to_f32(out_bf.bits);
-    print_hex(out.bits);
+    start_cycles = get_cycles();
+    start_instret = get_instret();
+    
+    test_bf16_div();
+          
+    end_cycles = get_cycles();
+    end_instret = get_instret();
+    cycles_elapsed = end_cycles - start_cycles;
+    instret_elapsed = end_instret - start_instret;
+
+    TEST_LOGGER("  Cycles: ");
+    print_dec((unsigned long) cycles_elapsed);
+    TEST_LOGGER("  Instructions: ");
+    print_dec((unsigned long) instret_elapsed);
+    TEST_LOGGER("\n");
 
     /* Floating point Square Root */
-    in1.value = 1.44f;
-    in1_bf.bits = f32_to_bf16(in1.bits);
-    out_bf.bits = my_sqrt(in1_bf.bits);
-    out.bits = bf16_to_f32(out_bf.bits);
-    print_hex(out.bits);
+    start_cycles = get_cycles();
+    start_instret = get_instret();
+    
+    test_bf16_sqrt();
+          
+    end_cycles = get_cycles();
+    end_instret = get_instret();
+    cycles_elapsed = end_cycles - start_cycles;
+    instret_elapsed = end_instret - start_instret;
+
+    TEST_LOGGER("  Cycles: ");
+    print_dec((unsigned long) cycles_elapsed);
+    TEST_LOGGER("  Instructions: ");
+    print_dec((unsigned long) instret_elapsed);
+    TEST_LOGGER("\n");
+
+    /* Floating point Specail cases */
+
+    /* NaN checks */
+    start_cycles = get_cycles();
+    start_instret = get_instret();
+
+    test_bf16_NaN();
+
+    end_cycles = get_cycles();
+    end_instret = get_instret();
+    cycles_elapsed = end_cycles - start_cycles;
+    instret_elapsed = end_instret - start_instret;
+
+    TEST_LOGGER("  Cycles: ");
+    print_dec((unsigned long) cycles_elapsed);
+    TEST_LOGGER("  Instructions: ");
+    print_dec((unsigned long) instret_elapsed);
+    TEST_LOGGER("\n");
+
+    /* Inf checks */
+    start_cycles = get_cycles();
+    start_instret = get_instret();
+
+    test_bf16_INF();
+
+    end_cycles = get_cycles();
+    end_instret = get_instret();
+    cycles_elapsed = end_cycles - start_cycles;
+    instret_elapsed = end_instret - start_instret;
+
+    TEST_LOGGER("  Cycles: ");
+    print_dec((unsigned long) cycles_elapsed);
+    TEST_LOGGER("  Instructions: ");
+    print_dec((unsigned long) instret_elapsed);
+    TEST_LOGGER("\n");
+
+    /* Zero checks */
+    start_cycles = get_cycles();
+    start_instret = get_instret();
+
+    test_bf16_ZERO();
+
+    end_cycles = get_cycles();
+    end_instret = get_instret();
+    cycles_elapsed = end_cycles - start_cycles;
+    instret_elapsed = end_instret - start_instret;
+
+    TEST_LOGGER("  Cycles: ");
+    print_dec((unsigned long) cycles_elapsed);
+    TEST_LOGGER("  Instructions: ");
+    print_dec((unsigned long) instret_elapsed);
+    TEST_LOGGER("\n");   
+
+    /* Equality checks */
+    start_cycles = get_cycles();
+    start_instret = get_instret();
+
+    test_bf16_EQUAL();
+
+    end_cycles = get_cycles();
+    end_instret = get_instret();
+    cycles_elapsed = end_cycles - start_cycles;
+    instret_elapsed = end_instret - start_instret;
+
+    TEST_LOGGER("  Cycles: ");
+    print_dec((unsigned long) cycles_elapsed);
+    TEST_LOGGER("  Instructions: ");
+    print_dec((unsigned long) instret_elapsed);
+    TEST_LOGGER("\n");
+    
+
+    /* less than */
+    start_cycles = get_cycles();
+    start_instret = get_instret();
+
+    test_bf16_LT();
+
+    end_cycles = get_cycles();
+    end_instret = get_instret();
+    cycles_elapsed = end_cycles - start_cycles;
+    instret_elapsed = end_instret - start_instret;
+
+    TEST_LOGGER("  Cycles: ");
+    print_dec((unsigned long) cycles_elapsed);
+    TEST_LOGGER("  Instructions: ");
+    print_dec((unsigned long) instret_elapsed);
+    TEST_LOGGER("\n");
+
+    /* Greater than */
+    start_cycles = get_cycles();
+    start_instret = get_instret();
+
+    test_bf16_GT();
+
+    end_cycles = get_cycles();
+    end_instret = get_instret();
+    cycles_elapsed = end_cycles - start_cycles;
+    instret_elapsed = end_instret - start_instret;
+
+    TEST_LOGGER("  Cycles: ");
+    print_dec((unsigned long) cycles_elapsed);
+    TEST_LOGGER("  Instructions: ");
+    print_dec((unsigned long) instret_elapsed);
+    TEST_LOGGER("\n");
+
 }
 
 
