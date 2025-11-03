@@ -326,7 +326,7 @@ static void test_bf16_mul(void)
     in2_bf.bits = f32_to_bf16(in2.bits);
     expect.bits = 0x4184;
     out_bf.bits = my_fp_mul(in1_bf.bits, in2_bf.bits, 0, 25, 7, 15, 15);
-
+    
     /* Optional (Test with FP32) */
     // f32_t out, rt;
     // out.bits=my_mul(in1.bits, in2.bits, 0, 9, 23, 31, 48);
@@ -374,7 +374,6 @@ static void test_bf16_sqrt(void) {
     in1_bf.bits = f32_to_bf16(in1.bits);
     expect.bits = 0x3f99;
     out_bf.bits = my_sqrt(in1_bf.bits);
-
     /* Check Correctness */
     if (out_bf.bits == expect.bits) {
         TEST_LOGGER("bf16 FP Square Root \t\tPASSED\n");

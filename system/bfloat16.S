@@ -387,12 +387,16 @@ my_mul:
     bne    a0, zero, my_mul_zero
     lw     a1, 4(sp)
     addi   a0,  x0, 0
-    addi   x28, x0, 0
+    # addi   x28, x0, 0
     lw     x29, 0(sp)
 my_mul_loop:
+    andi   x28, a1, 1
+    beq    x28, zero, my_mul_loop_1
     add    a0, a0, x29
-    addi   x28, x28, 1
-    bne    x28, a1, my_mul_loop
+my_mul_loop_1:
+    slli   x29, x29, 1
+    srli   a1, a1, 1
+    bne    a1, zero, my_mul_loop
 my_mul_ret:
     lw     ra, 8(sp)
     addi   sp, sp, 12
@@ -736,7 +740,7 @@ my_sqrt:
     srli   x30, a0, 15                  # sign
     andi   x30, x30, 1
     srli   x26, a0, 7                   # exp
-    and    x26, x26, x28
+    andi    x26, x26, 0xFF
     srli   x29, t1, 25                  # 0x7F
     and    x24, a0, x29
     add    x23, x0, x0
@@ -772,19 +776,19 @@ binary_search:
 binary_search_loop:
     blt    x27, x25, sqrt_normalize
     add    x29, x25, x27
-    srai   x29, x29, 1
-    add    a0, x0, x29
-    add    a1, x0, x29
+    srai   x31, x29, 1
+    add    a0, x0, x31
+    add    a1, x0, x31
     jal    ra, my_mul
     add    x20, x0, a0
 # mul x20, x29, x29
     srai   x20, x20, 7
     blt    x24, x20, sqrt_lower         # m < sq
-    add    x31, x0, x29                 # result=mid
-    addi   x25, x29, 1
+# add    x31, x0, x29                 # result=mid
+    addi   x25, x31, 1
     j      binary_search_loop
 sqrt_lower:
-    addi   x27, x29, -1
+    addi   x27, x31, -1
     j      binary_search_loop
 
 sqrt_normalize:
