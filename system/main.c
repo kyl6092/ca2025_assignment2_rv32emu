@@ -5,9 +5,9 @@
 #define printstr(ptr, length)                   \
     do {                                        \
         asm volatile(                           \
-            "add a7, x0, 0x40;"                 \
-            "add a0, x0, 0x1;" /* stdout */     \
-            "add a1, x0, %0;"                   \
+            "li a7, 0x40;"                 \
+            "li a0, 0x1;" /* stdout */     \
+            "mv a1, %0;"                   \
             "mv a2, %1;" /* length character */ \
             "ecall;"                            \
             :                                   \
@@ -257,6 +257,8 @@ extern uint32_t my_div(
 extern uint32_t my_sqrt(
     const uint32_t in
 );
+
+extern void hanoi();
 
 /* ============= Test Suite ============= */
 #define BF16_NAN() ((bf16_t) {.bits = 0x7FC0})
@@ -679,9 +681,30 @@ static void test_my_bfloat16(void)
 
 }
 
+static void test_hanoi(void)
+{
+    uint64_t start_cycles, end_cycles, cycles_elapsed;
+    uint64_t start_instret, end_instret, instret_elapsed;
+    TEST_LOGGER("--------------------\n");
+    TEST_LOGGER("Test: My hanoi\n");
 
+    start_cycles = get_cycles();
+    start_instret = get_instret();
+    hanoi();
+    end_cycles = get_cycles();
+    end_instret = get_instret();
+    cycles_elapsed = end_cycles - start_cycles;
+    instret_elapsed = end_instret - start_instret;
+
+    TEST_LOGGER("  Cycles: ");
+    print_dec((unsigned long) cycles_elapsed);
+    TEST_LOGGER("  Instructions: ");
+    print_dec((unsigned long) instret_elapsed);
+    TEST_LOGGER("\n");
+}
 int main(void)
 {
     test_my_bfloat16();
+    test_hanoi();
     return 0;
 }
