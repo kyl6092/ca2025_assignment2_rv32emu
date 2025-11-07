@@ -258,7 +258,7 @@ extern uint32_t my_sqrt(
     const uint32_t in
 );
 
-extern void hanoi();
+extern void hanoi(int num);
 
 /* ============= Test Suite ============= */
 #define BF16_NAN() ((bf16_t) {.bits = 0x7FC0})
@@ -690,7 +690,7 @@ static void test_hanoi(void)
 
     start_cycles = get_cycles();
     start_instret = get_instret();
-    hanoi();
+    hanoi(4);
     end_cycles = get_cycles();
     end_instret = get_instret();
     cycles_elapsed = end_cycles - start_cycles;
