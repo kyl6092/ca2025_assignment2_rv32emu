@@ -90,6 +90,15 @@ static uint32_t umul(uint32_t a, uint32_t b)
     return result;
 }
 
+static uint64_t mul32(uint32_t a, uint32_t b) {
+    uint64_t r = 0;
+    for (int i = 0; i < 32; i++) {
+        if (b & (1u << i))
+            r+=(uint64_t) a << i;
+    }
+    return r;
+}
+
 /* Provide __mulsi3 for GCC */
 uint32_t __mulsi3(uint32_t a, uint32_t b)
 {
@@ -142,6 +151,62 @@ static void print_dec(unsigned long val)
     p++;
     printstr(p, (buf + sizeof(buf) - p));
 }
+
+/* ============= fast reciprocal square root Implementation ============= */
+static const uint16_t rsqrt_table[32] = {
+    65536, 46341, 32768, 23170, 16384,  /* 2^0 to 2^4 */
+    11585,  8192,  5793,  4096,  2896,  /* 2^5 to 2^9 */
+     2048,  1448,  1024,   724,   512,  /* 2^10 to 2^14 */
+      362,   256,   181,   128,    90,  /* 2^15 to 2^19 */
+       64,    45,    32,    23,    16,  /* 2^20 to 2^24 */
+       11,     8,     6,     4,     3,  /* 2^25 to 2^29 */
+        2,     1                         /* 2^30, 2^31 */
+};
+
+static inline unsigned clz(uint32_t x)
+{
+    int n = 32, c = 16;
+    do {
+        uint32_t y = x >> c;
+        if (y) {
+            n -= c;
+            x = y;
+        }
+        c >>= 1;
+    } while (c);
+    return n - x;
+}
+
+
+uint32_t fast_rsqrt(uint32_t x)
+{
+    // scaling 2^16
+    /* Handle edge cases */
+    if (x==0) return 0xFFFFFFFF;
+    if (x==1) return 65536;
+
+    int exp = 31-clz(x);
+    
+    uint32_t y = rsqrt_table[exp];
+    
+    if (x > (1u << exp)) {
+        uint32_t y_next = (exp < 31) ? rsqrt_table[exp + 1] : 0;
+        uint32_t delta = y - y_next;
+        uint32_t frac = (uint32_t) ((((uint64_t)x - (1UL << exp)) << 16) >> exp);
+        y -= (uint32_t) ((delta * frac) >> 16);
+    }
+    for (int i = 0; i < 2; i++) {
+        uint32_t y2 = (uint32_t) mul32(y, y);
+        // print_dec(y2);
+        uint32_t xy2 = (uint32_t)(mul32(x, y2) >> 16);
+        y = (uint32_t)(mul32(y, (3u << 16)- xy2) >> 17);
+        print_dec(y);
+    }
+
+    // print_dec(y);
+    return y;
+}
+
 
 /* ============= BFloat16 Implementation ============= */
 
@@ -702,9 +767,31 @@ static void test_hanoi(void)
     print_dec((unsigned long) instret_elapsed);
     TEST_LOGGER("\n");
 }
+
+static void test_rsqrt(void)
+{
+    uint64_t start_cycles, end_cycles, cycles_elapsed;
+    uint64_t start_instret, end_instret, instret_elapsed;
+    uint32_t x = 5;
+    uint32_t rt;
+
+    start_cycles = get_cycles();
+    start_instret = get_instret();
+    rt = fast_rsqrt(x);
+    cycles_elapsed = end_cycles - start_cycles;
+    instret_elapsed = end_instret - start_instret;
+    print_hex(rt);
+
+    TEST_LOGGER("  Cycles: ");
+    print_dec((unsigned long) cycles_elapsed);
+    TEST_LOGGER("  Instructions: ");
+    print_dec((unsigned long) instret_elapsed);
+    TEST_LOGGER("\n");
+}
 int main(void)
 {
     test_my_bfloat16();
     test_hanoi();
+    test_rsqrt();
     return 0;
 }
