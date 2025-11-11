@@ -367,30 +367,6 @@ rt_b:
     ret
 
 
-
-
-# === my_mul ===
-.globl my_mul
-.type  my_mul,%function
-my_mul:
-# a0 out (in1)
-# a1 in2
-    add    x29, x0, a0
-    beq    a0, zero, my_mul_ret
-    addi   a0,  x0, 0
-    beq    a1, zero, my_mul_ret
-my_mul_loop:
-    andi   x28, a1, 1
-    beq    x28, zero, my_mul_loop_1
-    add    a0, a0, x29
-my_mul_loop_1:
-    slli   x29, x29, 1
-    srli   a1, a1, 1
-    bne    a1, zero, my_mul_loop
-my_mul_ret:
-    ret
-.size my_mul,.-my_mul
-
 # === my_fp_mul ===
 .globl my_fp_mul
 .type  my_fp_mul,%function

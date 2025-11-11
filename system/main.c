@@ -105,6 +105,12 @@ uint32_t __mulsi3(uint32_t a, uint32_t b)
     return umul(a, b);
 }
 
+extern uint32_t my_mul(
+    const uint32_t in1,
+    const uint32_t in2,
+    uint32_t *out2
+);
+
 /* Simple integer to hex string conversion */
 static void print_hex(unsigned long val)
 {
@@ -153,6 +159,12 @@ static void print_dec(unsigned long val)
 }
 
 /* ============= fast reciprocal square root Implementation ============= */
+
+typedef union {
+    uint64_t whole;
+    uint32_t part[2];
+} my_uint64_t;
+
 static const uint16_t rsqrt_table[32] = {
     65536, 46341, 32768, 23170, 16384,  /* 2^0 to 2^4 */
     11585,  8192,  5793,  4096,  2896,  /* 2^5 to 2^9 */
@@ -190,20 +202,25 @@ uint32_t fast_rsqrt(uint32_t x)
     uint32_t y = rsqrt_table[exp];
     
     if (x > (1u << exp)) {
+        my_uint64_t tmp;
         uint32_t y_next = (exp < 31) ? rsqrt_table[exp + 1] : 0;
         uint32_t delta = y - y_next;
         uint32_t frac = (uint32_t) ((((uint64_t)x - (1UL << exp)) << 16) >> exp);
-        y -= (uint32_t) ((delta * frac) >> 16);
+        // y -= (uint32_t) ((delta * frac) >> 16);
+        tmp.part[0] = my_mul(delta, frac, &(tmp.part[1]));
+        y -= (uint32_t) (tmp.whole >> 16);
     }
     for (int i = 0; i < 2; i++) {
-        uint32_t y2 = (uint32_t) mul32(y, y);
-        // print_dec(y2);
-        uint32_t xy2 = (uint32_t)(mul32(x, y2) >> 16);
-        y = (uint32_t)(mul32(y, (3u << 16)- xy2) >> 17);
-        print_dec(y);
+        my_uint64_t tmp;
+        tmp.part[0] = my_mul(y, y, &(tmp.part[1]));
+        tmp.part[0] = my_mul(x, tmp.part[0], &(tmp.part[1]));
+        uint32_t xy2 = (uint32_t)(tmp.whole >> 16);
+        tmp.part[0] = my_mul(y, (3u << 16)- xy2, &(tmp.part[1]));
+        y = (uint32_t)(tmp.whole>>17);
+        // uint32_t y2 = (uint32_t) mul32(y,y);
+        // uint32_t xy2 = (uint32_t)(mul32(x, y2) >> 16);
+        // y = (uint32_t)(mul32(y, (3u << 16)- xy2) >> 17);
     }
-
-    // print_dec(y);
     return y;
 }
 
@@ -287,16 +304,6 @@ extern uint32_t my_sub(
     const uint32_t mant_offset,
     const uint32_t exp_offset,
     const uint32_t sign_offset
-);
-
-extern uint32_t my_mul(
-    const uint32_t in1,
-    const uint32_t in2,
-    const uint32_t reserv,
-    const uint32_t mant_offset,
-    const uint32_t exp_offset,
-    const uint32_t sign_offset,
-    const uint32_t oper_offset
 );
 
 extern uint32_t my_fp_mul(
@@ -395,7 +402,7 @@ static void test_bf16_mul(void)
     out_bf.bits = my_fp_mul(in1_bf.bits, in2_bf.bits, 0, 25, 7, 15, 15);
     /* Optional (Test with FP32) */
     // f32_t out, rt;
-    // out.bits=my_mul(in1.bits, in2.bits, 0, 9, 23, 31, 48);
+    // out.bits=my_fp_mul(in1.bits, in2.bits, 0, 9, 23, 31, 48);
     // rt.bits = bf16_to_f32(out_bf.bits);
 
     /* Check Correctness */
@@ -778,6 +785,8 @@ static void test_rsqrt(void)
     start_cycles = get_cycles();
     start_instret = get_instret();
     rt = fast_rsqrt(x);
+    end_cycles = get_cycles();
+    end_instret = get_instret();
     cycles_elapsed = end_cycles - start_cycles;
     instret_elapsed = end_instret - start_instret;
     print_hex(rt);
@@ -791,7 +800,7 @@ static void test_rsqrt(void)
 int main(void)
 {
     test_my_bfloat16();
-    test_hanoi();
+    // test_hanoi();
     test_rsqrt();
     return 0;
 }
