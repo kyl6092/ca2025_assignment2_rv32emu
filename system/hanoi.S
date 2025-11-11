@@ -191,6 +191,11 @@ display_move:
     j       game_loop
 
 finish_game:
+    lw      s0, 0(x2)
+    lw      s1, 4(x2)
+    lw      s2, 8(x2)
+    lw      s3, 12(x2)
+    lw      s4, 16(x2)
     addi    sp, sp, 56
     ret
 .size hanoi,.-hanoi

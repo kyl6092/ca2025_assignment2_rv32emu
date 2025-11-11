@@ -111,6 +111,10 @@ extern uint32_t my_mul(
     uint32_t *out2
 );
 
+extern uint32_t my_clz(
+    const uint32_t in
+);
+
 /* Simple integer to hex string conversion */
 static void print_hex(unsigned long val)
 {
@@ -197,7 +201,8 @@ uint32_t fast_rsqrt(uint32_t x)
     if (x==0) return 0xFFFFFFFF;
     if (x==1) return 65536;
 
-    int exp = 31-clz(x);
+    // int exp = 31-clz(x);
+    int exp = 31-my_clz(x);
     
     uint32_t y = rsqrt_table[exp];
     
@@ -780,6 +785,7 @@ static void test_rsqrt(void)
     uint64_t start_cycles, end_cycles, cycles_elapsed;
     uint64_t start_instret, end_instret, instret_elapsed;
     uint32_t x = 5;
+    uint32_t expect = 0x727c;
     uint32_t rt;
 
     start_cycles = get_cycles();
@@ -789,7 +795,9 @@ static void test_rsqrt(void)
     end_instret = get_instret();
     cycles_elapsed = end_cycles - start_cycles;
     instret_elapsed = end_instret - start_instret;
-    print_hex(rt);
+    if (rt == expect) {
+        TEST_LOGGER("Reciprocal Square Root\t\tPASSED\n");
+    }
 
     TEST_LOGGER("  Cycles: ");
     print_dec((unsigned long) cycles_elapsed);
@@ -799,8 +807,10 @@ static void test_rsqrt(void)
 }
 int main(void)
 {
-    test_my_bfloat16();
-    // test_hanoi();
+    test_hanoi();
     test_rsqrt();
+    test_my_bfloat16();
+    test_hanoi();
+    
     return 0;
 }
