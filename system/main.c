@@ -108,6 +108,11 @@ uint32_t __mulsi3(uint32_t a, uint32_t b)
 extern uint32_t my_mul(
     const uint32_t in1,
     const uint32_t in2,
+    const uint32_t reserv1,
+    const uint32_t reserv2,
+    const uint32_t reserv3,
+    const uint32_t reserv4,
+    const uint32_t reserv5,
     uint32_t *out2
 );
 
@@ -201,7 +206,7 @@ uint32_t fast_rsqrt(uint32_t x)
     if (x==0) return 0xFFFFFFFF;
     if (x==1) return 65536;
 
-    // int exp = 31-clz(x);
+    int exp2 = 31-clz(x);
     int exp = 31-my_clz(x);
     
     uint32_t y = rsqrt_table[exp];
@@ -212,15 +217,15 @@ uint32_t fast_rsqrt(uint32_t x)
         uint32_t delta = y - y_next;
         uint32_t frac = (uint32_t) ((((uint64_t)x - (1UL << exp)) << 16) >> exp);
         // y -= (uint32_t) ((delta * frac) >> 16);
-        tmp.part[0] = my_mul(delta, frac, &(tmp.part[1]));
+        tmp.part[0] = my_mul(delta, frac, 0, 0, 0, 0, 0, &(tmp.part[1]));
         y -= (uint32_t) (tmp.whole >> 16);
     }
     for (int i = 0; i < 2; i++) {
         my_uint64_t tmp;
-        tmp.part[0] = my_mul(y, y, &(tmp.part[1]));
-        tmp.part[0] = my_mul(x, tmp.part[0], &(tmp.part[1]));
+        tmp.part[0] = my_mul(y, y, 0, 0, 0, 0, 0, &(tmp.part[1]));
+        tmp.part[0] = my_mul(x, tmp.part[0], 0, 0, 0, 0, 0, &(tmp.part[1]));
         uint32_t xy2 = (uint32_t)(tmp.whole >> 16);
-        tmp.part[0] = my_mul(y, (3u << 16)- xy2, &(tmp.part[1]));
+        tmp.part[0] = my_mul(y, (3u << 16)- xy2, 0, 0, 0, 0, 0, &(tmp.part[1]));
         y = (uint32_t)(tmp.whole>>17);
         // uint32_t y2 = (uint32_t) mul32(y,y);
         // uint32_t xy2 = (uint32_t)(mul32(x, y2) >> 16);
@@ -337,6 +342,12 @@ extern uint32_t my_sqrt(
 
 extern void hanoi(int num);
 
+extern uint32_t hero(
+    const bf16_t a,
+    const bf16_t b,
+    const bf16_t c
+);
+
 /* ============= Test Suite ============= */
 #define BF16_NAN() ((bf16_t) {.bits = 0x7FC0})
 #define BF16_ZERO() ((bf16_t) {.bits = 0x0000})
@@ -364,6 +375,7 @@ static void test_bf16_add(void)
         TEST_LOGGER("bf16 FP Addition \t\tPASSED\n");
     }
     else {
+        print_hex(out_bf.bits);
         TEST_LOGGER("bf16 FP Addition \t\tFAILED (expected 0x3f4d)\n");
     }
 }
@@ -805,12 +817,49 @@ static void test_rsqrt(void)
     print_dec((unsigned long) instret_elapsed);
     TEST_LOGGER("\n");
 }
+
+static void test_hero(void) {
+    uint64_t start_cycles, end_cycles, cycles_elapsed;
+    uint64_t start_instret, end_instret, instret_elapsed;
+    f32_t a, b, c;
+    bf16_t a_bf, b_bf, c_bf;
+    a.value = 1.1f;
+    b.value = 1.2f;
+    c.value = 1.3f;
+    a_bf.bits = f32_to_bf16(a.bits);
+    b_bf.bits = f32_to_bf16(b.bits);
+    c_bf.bits = f32_to_bf16(c.bits);
+    
+    uint32_t expect = 0x3f1c;
+    uint32_t rt_bf;
+
+    start_cycles = get_cycles();
+    start_instret = get_instret();
+    rt_bf = hero(a_bf, b_bf, c_bf);
+    end_cycles = get_cycles();
+    end_instret = get_instret();
+    cycles_elapsed = end_cycles - start_cycles;
+    instret_elapsed = end_instret - start_instret;
+    if (rt_bf == expect) {
+        TEST_LOGGER("hero's formula\t\tPASSED\n");
+    }
+    else {
+        TEST_LOGGER("hero's formula\t\tFalied\n");
+        print_hex(rt_bf);
+    }
+
+    TEST_LOGGER("  Cycles: ");
+    print_dec((unsigned long) cycles_elapsed);
+    TEST_LOGGER("  Instructions: ");
+    print_dec((unsigned long) instret_elapsed);
+    TEST_LOGGER("\n");
+}
 int main(void)
 {
     test_hanoi();
     test_rsqrt();
     test_my_bfloat16();
     test_hanoi();
-    
+    test_hero();
     return 0;
 }

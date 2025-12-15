@@ -419,7 +419,6 @@ mul_mantb_zero:
     bne    x26, zero, rt_mul_inf
     beq    x24, zero, rt_mul_nan
     j      rt_mul_inf
-    ret
 mul_stage3:
     bne    x26, zero, mul_judge_zero
     beq    x24, zero, rt_mul_zero

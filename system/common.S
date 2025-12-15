@@ -6,7 +6,7 @@
 my_mul:
 # a0 out1 (in1)
 # a1 in2
-# a2 (out2)
+# a7 (out2)
     add    x29, x0, a0
     beq    a0, zero, my_mul_ret
     addi   a0,  x0, 0
@@ -31,7 +31,7 @@ my_mul_loop_1:
     srli   a1, a1, 1
     bne    a1, zero, my_mul_loop
 my_mul_ret:
-    sw     t0, 0(a2)
+    sw     t0, 0(a7)
     ret
 .size my_mul,.-my_mul
 
